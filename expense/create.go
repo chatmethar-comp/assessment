@@ -8,7 +8,6 @@ import (
 )
 
 func CreateExpenseHandler(c echo.Context) error {
-
 	e := Expense{}
 	err := c.Bind(&e)
 	if err != nil {
