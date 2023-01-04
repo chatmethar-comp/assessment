@@ -33,7 +33,7 @@ func GetExpenseHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, expenses)
 }
 
-func GetUserHandler(c echo.Context) error {
+func GetExpenseIdHandler(c echo.Context) error {
 	id := c.Param("id")
 	stmt, err := db.Prepare(`SELECT id, title, amount, note, tags FROM expenses WHERE id = $1`)
 	if err != nil {

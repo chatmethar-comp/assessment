@@ -24,7 +24,7 @@ func main() {
 
 	e.POST("/expenses", expense.CreateExpenseHandler)
 	e.GET("/expenses", expense.GetExpenseHandler)
-	e.GET("/expenses/:id", expense.GetUserHandler)
+	e.GET("/expenses/:id", expense.GetExpenseIdHandler)
 	e.PUT("/expenses/:id", expense.PutExpenseHandler)
 
 	log.Fatal(e.Start(os.Getenv("PORT")))

@@ -22,9 +22,9 @@ func PutExpenseHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: "Can not Prepare Statement" + err.Error()})
 	}
-	if _, err := stmt.Exec(2, e.Title, e.Amount, e.Note, pq.Array(e.Tags)); err != nil {
+	if _, err := stmt.Exec(id, e.Title, e.Amount, e.Note, pq.Array(e.Tags)); err != nil {
 		return c.JSON(http.StatusBadRequest, Err{Message: "Can not execute" + err.Error()})
 	}
 	e.ID = id
-	return c.JSON(http.StatusCreated, e)
+	return c.JSON(http.StatusOK, e)
 }
