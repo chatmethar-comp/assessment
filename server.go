@@ -6,17 +6,12 @@ import (
 	"net/http"
 	"os"
 
+	"strconv"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-
 	"github.com/lib/pq"
 )
-
-type User struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-	Age  int    `json:"age"`
-}
 
 type Expense struct {
 	ID     int      `json:"id"`
@@ -61,7 +56,7 @@ func getExpenseHandler(c echo.Context) error {
 
 	for rows.Next() {
 		e := Expense{}
-		err := rows.Scan(&e.ID, &e.Title, &e.Amount, &e.Note, pq.Array(e.Tags))
+		err := rows.Scan(&e.ID, &e.Title, &e.Amount, &e.Note, pq.Array(&e.Tags))
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, Err{Message: "can't scan expense:" + err.Error()})
 		}
@@ -80,7 +75,7 @@ func getUserHandler(c echo.Context) error {
 
 	row := stmt.QueryRow(id)
 	e := Expense{}
-	err = row.Scan(&e.ID, &e.Title, &e.Amount, &e.Note, pq.Array(e.Tags))
+	err = row.Scan(&e.ID, &e.Title, &e.Amount, &e.Note, pq.Array(&e.Tags))
 	switch err {
 	case sql.ErrNoRows:
 		return c.JSON(http.StatusNotFound, Err{Message: "expense not found"})
@@ -92,29 +87,24 @@ func getUserHandler(c echo.Context) error {
 }
 
 func putExpenseHandler(c echo.Context) error {
-	id := c.Param("id")
-	e := Expense{}
-	err := c.Bind(&e)
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
 	}
-	log.Println(e)
-	row := db.QueryRow(`UPDATE expenses SET title=$2, amount=$3, note=$4, tags=$5 WHERE id = $1`, id, e.Title, e.Amount, e.Note, pq.Array(e.Tags))
-	err = row.Scan()
-
+	e := Expense{}
+	err = c.Bind(&e)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
+		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
 	}
+	stmt, err := db.Prepare(`UPDATE expenses SET title=$2 , amount=$3 , note=$4 , tags=$5 WHERE id=$1;`)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Err{Message: "Can not Prepare Statement" + err.Error()})
+	}
+	if _, err := stmt.Exec(2, e.Title, e.Amount, e.Note, pq.Array(e.Tags)); err != nil {
+		return c.JSON(http.StatusBadRequest, Err{Message: "Can not execute" + err.Error()})
+	}
+	e.ID = id
 	return c.JSON(http.StatusCreated, e)
-	// stmt, err := db.Prepare(`UPDATE expense SET title=$2 amount=$3 note=$4 tags=$5 WHERE id=$1`)
-	// if err != nil {
-	// 	return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
-	// }
-	// if _, err := stmt.Exec(2, e.Title, e.Amount, e.Note, pq.Array(e.Tags)); err != nil {
-	// 	return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
-	// }
-	// return c.JSON(http.StatusCreated, e)
-
 }
 
 var db *sql.DB
